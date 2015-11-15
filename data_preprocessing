@@ -1,0 +1,92 @@
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from dateutil.parser import parse
+import calendar
+import hashlib
+NR_BINS = 1000000
+def hashstr(input):
+    return int(hashlib.md5(input.encode('utf8')).hexdigest(), 16)%(NR_BINS-1)+1
+
+file = r'D:\data\youmi\20151103.csv'
+df = pd.read_csv(file, names = ['spotid', 'ac802', 'drt', 'uid', 'yob', 'gender', 'userid', 'ei', 'brd', 'mo', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'splash', 'adown', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'seq', 'inst1', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'storeid', 'goal', 'hv', 'cst', 'rtype', 'tag'])
+
+df['drt'] = df['drt'].str.replace('+', ' ')
+mon = []
+day = []
+hour = []
+minute = []
+weekday = []
+for i in df['drt']:
+    i = parse(i)
+    mon.append(i.month)
+    day.append(i.day)
+    hour.append(i.hour)
+    minute.append(i.minute)
+    weekday.append((calendar.weekday(i.year, i.month, i.day) + 1) % 7)
+df['mon'] = mon
+df['day'] = day
+df['hour'] = hour
+df['minute'] = minute
+df['weekday'] = weekday
+df.hour = [(i / 3) + 1 for i in df.hour]
+
+df.carrier = df.carrier.replace(0, 10)
+df.inst1 = df.inst1.replace(0, 10)
+df.hv = df.hv.replace(0, 10)
+df.splash = df.splash.replace(0, 10)
+df = df.fillna(0)
+
+df.ei = [hashstr('ei-' + str(i)) for i in df.ei]
+df.ei = df.ei.replace(hashstr('ei-' + str(0)), 0)
+df.mo = [hashstr('mo-' + str(i)) for i in df.mo]
+df.mo = df.mo.replace(hashstr('mo-' + str(0)), 0)
+df.osv = [hashstr('osv-' + str(i)) for i in df.osv]
+df.osv = df.osv.replace(hashstr('osv-' + str(0)), 0)
+df.ip = [hashstr('ip-' + str(i)) for i in df.ip]
+df.ip = df.ip.replace(hashstr('ip-' + str(0)), 0)
+df.title = [hashstr('title-' + str(i)) for i in df.title]
+df.title = df.title.replace(hashstr('title-' + str(0)), 0)
+df.bidappnm = [hashstr('bidappnm' + str(i)) for i in df.bidappnm]
+df.bidappnm = df.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
+df.gender = [hashstr('gender-' + str(i)) for i in df.gender]
+df.gender = df.gender.replace(hashstr('gender-' + str(0)), 0)
+df.os = [hashstr('os-' + str(i)) for i in df.os]
+df.os = df.os.replace(hashstr('os-' + str(0)), 0)
+
+bidp = df.bidprice
+winp = df.winprice
+click = df.ac802
+del df['drt']
+del df['uid']
+del df['userid']
+del df['brd']
+del df['sw']
+del df['sh']
+del df['country']
+del df['apn']
+del df['lat']
+del df['lon']
+del df['ua']
+del df['adown']
+del df['bidceiling']
+del df['lang']
+del df['content']
+del df['imageurl']
+del df['storeid']
+del df['cst']
+del df['rtype']
+del df['mon']
+del df['minute']
+del df['bidprice']
+del df['winprice']
+del df['ac802']
+del df['tag']
+df.astype(int)
+outfile = "D:\data\youmi\preprocess/20151103_n1.csv"
+df.to_csv(outfile, index = False)
+
