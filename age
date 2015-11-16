@@ -1,0 +1,50 @@
+# coding: utf-8
+import csv
+from sklearn.preprocessing import OneHotEncoder
+
+#import types
+#import numpy
+#from  datetime  import  *  
+#import  time  
+
+#csvfile = file('C:\Users\Gwinhen\Desktop\\ad\data.csv', 'rb')
+csvfile = file('C:\Users\Gwinhen\Desktop\\20151027.csv', 'rb')
+reader = csv.reader(csvfile)
+
+maxnum=1945
+arr1=[]
+
+for line in reader:
+    
+    if(line[4]==''):
+        arr1.append([0])
+        continue
+    else:    
+        arr1.append([(int(line[4])-1945)/5])
+    if(int(line[4])>maxnum):
+        maxnum=int(line[4])
+#print arr1
+#for i in range(0,len(arr1)):
+#    print arr1[i]
+
+arr2 = [[i] for i in range(1,(maxnum-1945)/5+2)]
+#print arr2
+
+csvfile.close()
+
+arr3=[]
+    
+enc = OneHotEncoder()
+enc.fit(arr2)
+
+#csvfile = file('C:\Users\Gwinhen\Desktop\\ad\csv_test.csv', 'wb')
+csvfile = file('C:\Users\Gwinhen\Desktop\csv_test.csv', 'wb')
+writer = csv.writer(csvfile)
+writer.writerow(['age'])
+
+for i in range(0,len(arr1)):
+#    print enc.transform([arr1[i]]).toarray()
+    writer.writerows(enc.transform([arr1[i]]).toarray())
+
+csvfile.close()
+print "finished"
