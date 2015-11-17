@@ -10,6 +10,8 @@ import calendar
 import hashlib
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss
+
 def preProcess(str1):
     NR_BINS = 1000000
     def hashstr(input):
@@ -107,17 +109,29 @@ def preProcess(str1):
     l = df.values.tolist()
     res = [map(int, i) for i in l]  
     return res,resY
-res,resY=preProcess(r'E:\ad\data\20151104.csv')
+res,resY=preProcess(r'E:\ad\data\20151027.csv')
+res1,resY1=preProcess(r'E:\ad\data\20151028.csv')
+res2,resY2=preProcess(r'E:\ad\data\20151029.csv')
+
+res.extend(res1)
+res.extend(res2)
+
+resY.extend(resY1)
+resY.extend(resY2)
+
 enc = OneHotEncoder()
 train_data = enc.fit_transform(res)
 
 res_test,resY_test=preProcess(r'E:\ad\data\20151103.csv')
-test_data = enc.transform(res)
+test_data = enc.transform(res_test)
 
 #print r
 
+
+
 clf_l2_LR = LogisticRegression(penalty='l2', tol=0.01)
 clf_l2_LR.fit(train_data,resY)
-print clf_l2_LR.predict_proba(test_data[0])
+y_pred = clf_l2_LR.predict_proba(test_data)
+print log_loss(resY_test,y_pred)
 
 print "finished"
