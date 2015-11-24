@@ -1,0 +1,34 @@
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from dateutil.parser import parse
+import calendar
+import hashlib
+NR_BINS = 1000000
+def hashstr(input):
+    return int(hashlib.md5(input.encode('utf8')).hexdigest(), 16)%(NR_BINS-1)+1
+
+file = r'F:\data\data\sample.csv'
+df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+
+df['drt'] = df['drt'].str.replace('+', ' ')
+mon = []
+day = []
+hour = []
+minute = []
+weekday = []
+for i in df['drt']:
+    i = parse(i)
+    mon.append(i.month)
+    day.append(i.day)
+    hour.append(i.hour)
+    minute.append(i.minute)
+    weekday.append((calendar.weekday(i.year, i.month, i.day) + 1) % 7)
+df['mon'] = mon
+df['day'] = day
+df['hour'] = hour
+df['minute'] = minute
+df['weekday'] = weekday
+df.hour = [(i / 3) + 1 for i in df.hour]
+
+train = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
