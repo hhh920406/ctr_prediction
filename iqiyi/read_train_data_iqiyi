@@ -9,7 +9,7 @@ def hashstr(input):
     return int(hashlib.md5(input.encode('utf8')).hexdigest(), 16)%(NR_BINS-1)+1
 
 file = r'F:\data\data\sample.csv'
-df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
 
 df['drt'] = df['drt'].str.replace('+', ' ')
 mon = []
