@@ -1,0 +1,15 @@
+
+import numpy as np
+import pandas as pd
+
+file = r'D:\data\sample.csv'
+
+df = pd.read_csv(file, names = ['spotid', 'ac802', 'drt', 'did', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'blank', 'goal', 'hv', 'pub_title', 'keyword', 'channelid', 'albumid'])
+
+keyword_iter = (set(str(x).split('|')) for x in df.keyword)
+keywords = sorted(set.union(*keyword_iter))
+dummies = pd.DataFrame(np.zeros((len(df), len(keywords))), columns=keywords)
+for i, keyword in enumerate(df.keyword):
+    dummies.ix[i, str(keyword).split('|')] = 1
+
+print 'finished'
