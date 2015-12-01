@@ -42,17 +42,17 @@ def preProcess(filePath):
     pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
     #pre.to_csv(r'D:\data\youmi\pre.csv', index = False)
     
-    train1 = pre[['spotid', 'uid', 'connt', 'w', 'h', 'pos', 'city', 'adw', 'adh', 'bidappnm', 'albumid', 'mon', 'day', 'hour', 'weekday']]
+    data = pre[['spotid', 'uid', 'connt', 'w', 'h', 'pos', 'city', 'adw', 'adh', 'bidappnm', 'albumid', 'mon', 'day', 'hour', 'weekday']]
     
     #hashing
-    train1.uid = [hashstr('uid-' + str(i)) for i in train1.uid]
-    train1.uid = train1.uid.replace(hashstr('uid-' + str(0)), 0)
-    train1.bidappnm = [hashstr('bidappnm-' + str(i)) for i in train1.bidappnm]
-    train1.bidappnm = train1.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
+    data.uid = [hashstr('uid-' + str(i)) for i in data.uid]
+    data.uid = data.uid.replace(hashstr('uid-' + str(0)), 0)
+    data.bidappnm = [hashstr('bidappnm-' + str(i)) for i in data.bidappnm]
+    data.bidappnm = data.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
     
     #OneHotEncoding
     enc = OneHotEncoder(handle_unknown = 'ignore')
-    oneHotResult = enc.fit_transform(train1.values)
+    oneHotResult = enc.fit_transform(data.values)
     clickRecord = pre['click']
     
     return pre,oneHotResult,clickRecord
