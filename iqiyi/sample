@@ -14,54 +14,61 @@ NR_BINS = 1000000
 def hashstr(input):
     return int(hashlib.md5(input).hexdigest(), 16)%(NR_BINS-1)+1
 
-file = r'D:\data\youmi\sample.csv'
-df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+def preProcess(filePath):
+    #file = r'D:\iqiy_data\sample.csv'
+    file = filePath
+    df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+    
+    df['drt'] = df['drt'].str.replace('+', ' ')
+    mon = []
+    day = []
+    hour = []
+    minute = []
+    weekday = []
+    for i in df['drt']:
+        i = parse(i)
+        mon.append(i.month)
+        day.append(i.day)
+        hour.append(i.hour)
+        minute.append(i.minute)
+        weekday.append((calendar.weekday(i.year, i.month, i.day) + 1) % 7 + 1)
+    df['mon'] = mon
+    df['day'] = day
+    df['hour'] = hour
+    df['minute'] = minute
+    df['weekday'] = weekday
+    df.hour = [(i / 3) + 1 for i in df.hour]
+    
+    pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
+    #pre.to_csv(r'D:\data\youmi\pre.csv', index = False)
+    
+    train1 = pre[['spotid', 'uid', 'connt', 'w', 'h', 'pos', 'city', 'adw', 'adh', 'bidappnm', 'albumid', 'mon', 'day', 'hour', 'weekday']]
+    
+    #hashing
+    train1.uid = [hashstr('uid-' + str(i)) for i in train1.uid]
+    train1.uid = train1.uid.replace(hashstr('uid-' + str(0)), 0)
+    train1.bidappnm = [hashstr('bidappnm-' + str(i)) for i in train1.bidappnm]
+    train1.bidappnm = train1.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
+    
+    #OneHotEncoding
+    enc = OneHotEncoder(handle_unknown = 'ignore')
+    oneHotResult = enc.fit_transform(train1.values)
+    clickRecord = pre['click']
+    
+    return pre,oneHotResult,clickRecord
 
-df['drt'] = df['drt'].str.replace('+', ' ')
-mon = []
-day = []
-hour = []
-minute = []
-weekday = []
-for i in df['drt']:
-    i = parse(i)
-    mon.append(i.month)
-    day.append(i.day)
-    hour.append(i.hour)
-    minute.append(i.minute)
-    weekday.append((calendar.weekday(i.year, i.month, i.day) + 1) % 7 + 1)
-df['mon'] = mon
-df['day'] = day
-df['hour'] = hour
-df['minute'] = minute
-df['weekday'] = weekday
-df.hour = [(i / 3) + 1 for i in df.hour]
-
-pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
-pre.to_csv(r'D:\data\youmi\pre.csv', index = False)
-
-train1 = pre[['spotid', 'uid', 'connt', 'w', 'h', 'pos', 'city', 'adw', 'adh', 'bidappnm', 'albumid', 'mon', 'day', 'hour', 'weekday']]
-
-#hashing
-train1.uid = [hashstr('uid-' + str(i)) for i in train1.uid]
-train1.uid = train1.uid.replace(hashstr('uid-' + str(0)), 0)
-train1.bidappnm = [hashstr('bidappnm-' + str(i)) for i in train1.bidappnm]
-train1.bidappnm = train1.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
-
-#OneHotEncoding
-enc = OneHotEncoder(handle_unknown = 'ignore')
-train1_x = enc.fit_transform(train1.values)
-train_y = pre['click']
-
+pre,train1_x,train_y=preProcess(r'D:\iqiy_data\sample.csv')
 
 #process keywords
 keyword_iter = (set(str(x).split('|')) for x in pre.keyword)
 keywords = sorted(set.union(*keyword_iter))
 dummies = pd.DataFrame(np.zeros((len(pre), len(keywords))), columns=keywords)
-for i, keyword in enumerate(df.keyword):
+for i, keyword in enumerate(pre.keyword):
     dummies.ix[i, str(keyword).split('|')] = 1
 train2_x = scipy.sparse.csr_matrix(dummies.values)
 train_x = hstack([train1_x,train2_x])
+
+
 
 #LR fit
 clf_l2_LR = LogisticRegression(penalty='l2', tol=0.01)
