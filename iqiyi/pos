@@ -1,0 +1,171 @@
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from dateutil.parser import parse
+import calendar
+import hashlib
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss
+import scipy
+from scipy.sparse import coo_matrix, hstack
+from sklearn.metrics import roc_auc_score
+
+NR_BINS = 1000000
+def hashstr(input):
+    return int(hashlib.md5(input).hexdigest(), 16)%(NR_BINS-1)+1
+
+def preProcess(filePath):
+    #file = r'D:\iqiy_data\sample.csv'
+    file = filePath
+    df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+
+    df['drt'] = df['drt'].str.replace('+', ' ')
+    mon = []
+    day = []
+    hour = []
+    minute = []
+    weekday = []
+    for i in df['drt']:
+        i = parse(i)
+        mon.append(i.month)
+        day.append(i.day)
+        hour.append(i.hour)
+        minute.append(i.minute)
+        weekday.append((calendar.weekday(i.year, i.month, i.day) + 1) % 7 + 1)
+    df['mon'] = mon
+    df['day'] = day
+    df['hour'] = hour
+    df['minute'] = minute
+    df['weekday'] = weekday
+    df.hour = [(i / 3) + 1 for i in df.hour]
+    df = df.fillna(0)
+
+    pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
+    #pre.to_csv(r'D:\data\youmi\pre.csv', index = False)
+
+    data = pre[['spotid', 'uid', 'connt', 'w', 'h', 'pos', 'city', 'adw', 'adh', 'bidappnm', 'albumid', 'mon', 'day', 'hour', 'weekday']]
+
+    #hashing
+    data.uid = [hashstr('uid-' + str(i)) for i in data.uid]
+    data.uid = data.uid.replace(hashstr('uid-' + str(0)), 0)
+    data.bidappnm = [hashstr('bidappnm-' + str(i)) for i in data.bidappnm]
+    data.bidappnm = data.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
+    data['click'] = pre['click']
+    return pre, data
+
+pre, data = preProcess(r'D:\data\youmi\iqiy_data\iqiyi_20151111.csv')
+
+data1 = data[data.pos == 55]
+click1 = data1['click']
+del data1['click']
+data2 = data[data.pos == 56]
+click2 = data2['click']
+del data2['click']
+data3 = data[data.pos == 58]
+click3 = data3['click']
+del data3['click']
+data4 = data[data.pos == 59]
+click4 = data4['click']
+del data4['click']
+
+#OneHotEncoding
+enc1 = OneHotEncoder(handle_unknown = 'ignore')
+enc2 = OneHotEncoder(handle_unknown = 'ignore')
+enc3 = OneHotEncoder(handle_unknown = 'ignore')
+enc4 = OneHotEncoder(handle_unknown = 'ignore')
+train_x1 = enc1.fit_transform([map(int, i) for i in data1.values.tolist()])
+train_x2 = enc2.fit_transform([map(int, i) for i in data2.values.tolist()])
+train_x3 = enc3.fit_transform([map(int, i) for i in data3.values.tolist()])
+train_x4 = enc4.fit_transform([map(int, i) for i in data4.values.tolist()])
+
+
+
+#pre,train1_x,train_y=preProcess(r'D:\iqiy_data\sample.csv')
+#
+###process keywords
+##keyword_iter = (set(str(x).split('|')) for x in pre.keyword)
+##keywords = sorted(set.union(*keyword_iter))
+##dummies = pd.DataFrame(np.zeros((len(pre), len(keywords))), columns=keywords)
+##for i, keyword in enumerate(pre.keyword):
+##    dummies.ix[i, str(keyword).split('|')] = 1
+##train2_x = scipy.sparse.csr_matrix(dummies.values)
+##train_x = hstack([train1_x,train2_x])
+
+
+
+#LR fit
+clf_l2_LR1 = LogisticRegression(penalty='l2', tol=0.01)
+clf_l2_LR1.fit(train_x1,click1)
+clf_l2_LR2 = LogisticRegression(penalty='l2', tol=0.01)
+clf_l2_LR2.fit(train_x2,click2)
+clf_l2_LR3 = LogisticRegression(penalty='l2', tol=0.01)
+clf_l2_LR3.fit(train_x3,click3)
+clf_l2_LR4 = LogisticRegression(penalty='l2', tol=0.01)
+clf_l2_LR4.fit(train_x4,click4)
+
+test_pre, test_data = preProcess(r'D:\data\youmi\iqiy_data\iqiyi_20151112.csv')
+
+test_data1 = test_data[test_data.pos == 55]
+test_click1 = test_data1['click']
+del test_data1['click']
+test_data2 = test_data[test_data.pos == 56]
+test_click2 = test_data2['click']
+del test_data2['click']
+test_data3 = test_data[test_data.pos == 58]
+test_click3 = test_data3['click']
+del test_data3['click']
+test_data4 = test_data[test_data.pos == 59]
+test_click4 = test_data4['click']
+del test_data4['click']
+
+
+#OneHotEncoding
+enc = OneHotEncoder(handle_unknown = 'ignore')
+test_x1 = enc1.transform([map(int, i) for i in test_data1.values.tolist()])
+test_x2 = enc2.transform([map(int, i) for i in test_data2.values.tolist()])
+test_x3 = enc3.transform([map(int, i) for i in test_data3.values.tolist()])
+test_x4 = enc4.transform([map(int, i) for i in test_data4.values.tolist()])
+
+
+#LR predict
+pre1 = clf_l2_LR1.predict_proba(test_x1)
+pre2 = clf_l2_LR2.predict_proba(test_x2)
+pre3 = clf_l2_LR3.predict_proba(test_x3)
+pre4 = clf_l2_LR4.predict_proba(test_x4)
+
+
+
+pre1 = pd.DataFrame(pre1, columns=['N', 'P'])
+test_click1.index = range(test_click1.shape[0])
+test1 = pd.concat([test_click1, pre1], axis=1)
+test1.to_csv(r'D:\data\youmi\iqiy_data\test\test1.csv', index = False)
+
+pre2 = pd.DataFrame(pre2, columns=['N', 'P'])
+test_click2.index = range(test_click2.shape[0])
+test2 = pd.concat([test_click2, pre2], axis=1)
+test2.to_csv(r'D:\data\youmi\iqiy_data\test\test2.csv', index = False)
+
+pre3 = pd.DataFrame(pre3, columns=['N', 'P'])
+test_click3.index = range(test_click3.shape[0])
+test3 = pd.concat([test_click3, pre3], axis=1)
+test3.to_csv(r'D:\data\youmi\iqiy_data\test\test3.csv', index = False)
+
+pre4 = pd.DataFrame(pre4, columns=['N', 'P'])
+test_click4.index = range(test_click4.shape[0])
+test4 = pd.concat([test_click4, pre4], axis=1)
+test4.to_csv(r'D:\data\youmi\iqiy_data\test\test4.csv', index = False)
+
+
+log_loss(test_click1.values.tolist(),pre1.values.tolist())
+log_loss(test_click2.values.tolist(),pre2.values.tolist())
+log_loss(test_click3.values.tolist(),pre3.values.tolist())
+log_loss(test_click4.values.tolist(),pre4.values.tolist())
+
+
+test = pd.concat([test1, test2, test3, test4])
+test.to_csv(r'D:\data\youmi\iqiy_data\test\test4.csv', index = False)
+test_click = test.click.values.tolist()
+test_predict = test[['N', 'P']]
+test_predict = test_predict.values.tolist()
+roc_auc_score(test_click, test['P'].values.tolist())
