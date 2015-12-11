@@ -1,0 +1,32 @@
+import numpy as np
+import pandas as pd
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import log_loss
+
+file = r'D:\iqiy_data\iqiyi_20151112.csv'
+df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df = df[df.pos != 0]
+rand=np.linspace(0.01,0.01,957791)
+y_true = df['click']
+
+y_pred=np.zeros((957791,2))
+y_pred[:,0]=0.99
+y_pred[:,1]=0.01
+print 'log_loss'
+print log_loss(y_true, y_pred)
+
+y_scores = rand
+print 'roc_auc_score'
+print roc_auc_score(y_true, y_scores)
+
+print '========================================='
+
+rand2=np.random.rand(957791,2)
+
+rand2[:,0]=[1 - i for i in rand2[:, 1]]
+print 'log_loss2'
+print log_loss(y_true, rand2)
+
+y_scores2 = rand2[:,1]
+print 'roc_auc_score2'
+print roc_auc_score(y_true, y_scores2)
