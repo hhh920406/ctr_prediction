@@ -4,32 +4,73 @@ from datetime import datetime
 from dateutil.parser import parse
 import calendar
 import hashlib
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss
+import scipy
+from scipy.sparse import coo_matrix, hstack
+from sklearn.metrics import roc_auc_score
+
 NR_BINS = 1000000
 def hashstr(input):
-    return int(hashlib.md5(input.encode('utf8')).hexdigest(), 16)%(NR_BINS-1)+1
+    return int(hashlib.md5(input).hexdigest(), 16)%(NR_BINS-1)+1
 
-file = r'D:\data\youmi\sample.csv'
-df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+file = r'D:\iqiy_data\sample.csv'
+df11 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151111.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df12 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151112.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df13 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151113.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df14 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151114.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df15 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151115.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df16 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151116.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df17 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151117.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+train = pd.concat([df11, df12, df13, df14, df15, df16, df17])
+train56 = train[train.pos == 56]
+train56 = train56.fillna(0)
+train56.index = range(train56.shape[0])
 
-df['drt'] = df['drt'].str.replace('+', ' ')
-mon = []
-day = []
-hour = []
-minute = []
-weekday = []
-for i in df['drt']:
-    i = parse(i)
-    mon.append(i.month)
-    day.append(i.day)
-    hour.append(i.hour)
-    minute.append(i.minute)
-    weekday.append((calendar.weekday(i.year, i.month, i.day) + 1) % 7)
-df['mon'] = mon
-df['day'] = day
-df['hour'] = hour
-df['minute'] = minute
-df['weekday'] = weekday
-df.hour = [(i / 3) + 1 for i in df.hour]
 
-pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
-pre.to_csv(r'D:\data\youmi\pre.csv', index = False)
+df18 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151118.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df19 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151119.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df20 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151120.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df21 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151121.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df22 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151122.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df23 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151123.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+df24 = pd.read_csv(r'D:\data\youmi\iqiy_data\iqiyi_20151124.csv', names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+test = pd.concat([df18, df19, df20, df21, df22, df23, df24])
+test56 = test[test.pos == 56]
+test56 = test56.fillna(0)
+test56.index = range(test56.shape[0])
+
+def PreProcess(df):
+    df = df.fillna(0)
+    df['drt'] = df['drt'].str.replace('+', ' ')
+    df['drt'] = [parse(i) for i in df.drt]
+    mon = [i.month for i in df.drt]
+    day = [i.day for i in df.drt]
+    hour = [i.hour for i in df.drt]
+    minute = [i.minute for i in df.drt]
+    weekday = [calendar.weekday(i.year, i.month, i.day) for i in df.drt]
+    
+    df['mon'] = mon
+    df['day'] = day
+    df['hour'] = hour
+    df['minute'] = minute
+    df['weekday'] = weekday
+    df.hour = [(i / 3) + 1 for i in df.hour]
+    
+    pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
+    
+    data = pre[['spotid', 'uid', 'connt', 'w', 'h', 'pos', 'city', 'adw', 'adh', 'bidappnm', 'albumid', 'mon', 'day', 'hour', 'weekday', 'click']]
+    
+    #hashing
+    data.uid = [hashstr('uid-' + str(i)) for i in data.uid]
+    data.uid = data.uid.replace(hashstr('uid-' + str(0)), 0)
+    data.bidappnm = [hashstr('bidappnm-' + str(i)) for i in data.bidappnm]
+    data.bidappnm = data.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
+    return data
+    
+train56 = PreProcess(train56)
+train56.to_csv(r'D:\data\youmi\iqiy_data\train56.csv', index = False)
+
+test56 = PreProcess(test56)
+test56.to_csv(r'D:\data\youmi\iqiy_data\test56.csv', index = False)
