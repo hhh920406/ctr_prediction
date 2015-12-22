@@ -1,15 +1,59 @@
-
+===========================================这个是包含所有keyword的===========================================
 import numpy as np
 import pandas as pd
+import scipy
+from scipy.sparse import vstack
 
-file = r'D:\data\sample.csv'
+def myfind(x,y):
+    return [ a for a in range(len(y)) if y[a] == x]
+
+file = r'E:\ad\iqiy_data\sample.csv'
 
 df = pd.read_csv(file, names = ['spotid', 'ac802', 'drt', 'did', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'blank', 'goal', 'hv', 'pub_title', 'keyword', 'channelid', 'albumid'])
 
-keyword_iter = (set(str(x).split('|')) for x in df.keyword)
+pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
+ 
+keyword_iter = (set(str(x).split('|')) for x in pre.keyword)
 keywords = sorted(set.union(*keyword_iter))
-dummies = pd.DataFrame(np.zeros((len(df), len(keywords))), columns=keywords)
-for i, keyword in enumerate(df.keyword):
-    dummies.ix[i, str(keyword).split('|')] = 1
 
-print 'finished'
+dummies = pd.DataFrame(np.zeros((1, len(keywords))), columns=keywords)
+dummies.ix[0, str(pre.keyword[0]).split('|')] = 1
+csrRes = scipy.sparse.csr_matrix(dummies.values)
+
+for i, keyword in enumerate(pre.keyword[1:]):
+    dummies.ix[0, ] = 0
+    dummies.ix[0, str(keyword).split('|')] = 1
+    res = scipy.sparse.csr_matrix(dummies.values)
+    csrRes = vstack([csrRes,res])
+===========================================这个是在遍历时随机除去一部分的===========================================
+import random
+import time
+import numpy as np
+import pandas as pd
+import scipy
+from scipy.sparse import vstack
+
+print 'start at:'
+print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+
+file = r'E:\ad\iqiy_data\iqiyi_20151111.csv'
+
+df = pd.read_csv(file, names = ['spotid', 'ac802', 'drt', 'did', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'blank', 'goal', 'hv', 'pub_title', 'keyword', 'channelid', 'albumid'])
+
+pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
+ 
+keyword_iter = (set(random.sample(str(x).split('|'),random.randint(0,len(str(x).split('|'))))) for x in df.keyword)
+keywords = sorted(set.union(*keyword_iter))
+
+dummies = pd.DataFrame(np.zeros((1, len(keywords))), columns=keywords)
+dummies.ix[0, set(str(pre.keyword[0]).split('|')).intersection(set(keywords))] = 1
+csrRes = scipy.sparse.csr_matrix(dummies.values)
+
+for i, keyword in enumerate(pre.keyword[1:]):
+    dummies.ix[0, ] = 0
+    dummies.ix[0, set(str(keyword).split('|')).intersection(set(keywords))] = 1
+    res = scipy.sparse.csr_matrix(dummies.values)
+    csrRes = vstack([csrRes,res])
+
+print 'end at:'
+print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
