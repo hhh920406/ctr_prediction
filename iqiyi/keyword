@@ -57,3 +57,51 @@ for i, keyword in enumerate(pre.keyword[1:]):
 
 print 'end at:'
 print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+===========================================这个是取top1000的===========================================
+import numpy as np
+import pandas as pd
+import scipy
+from scipy.sparse import vstack
+import time
+
+TOP_NUM=1000
+
+def myfind(x,y):
+    return [ a for a in range(len(y)) if y[a] == x]
+
+def mycal(x):
+    kwdict[x]+=1
+            
+print 'start at:'
+print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
+
+file = r'E:\ad\iqiy_data\sample.csv'
+
+df = pd.read_csv(file, names = ['spotid', 'ac802', 'drt', 'did', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'blank', 'goal', 'hv', 'pub_title', 'keyword', 'channelid', 'albumid'])
+
+pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
+ 
+keyword_iter = (set(str(x).split('|')) for x in pre.keyword)
+keywords = sorted(set.union(*keyword_iter))
+
+kwdict = {}.fromkeys((keywords), 0)
+
+for i, keyword in enumerate(pre.keyword):
+    [mycal(x) for x in str(keyword).split('|')]
+    
+kwTop=sorted(kwdict.items(), key=lambda d: d[1],reverse=True)[0:TOP_NUM]
+
+kwSet=set([j[0] for j in kwTop])
+
+dummies = pd.DataFrame(np.zeros((1, TOP_NUM)), columns=[j[0] for j in kwTop])
+dummies.ix[0, set(str(pre.keyword[0]).split('|')).intersection(set(kwSet))] = 1
+csrRes = scipy.sparse.csr_matrix(dummies.values)
+
+for i, keyword in enumerate(pre.keyword[1:]):
+    dummies.ix[0, ] = 0
+    dummies.ix[0, set(str(keyword).split('|')).intersection(set(kwSet))] = 1
+    res = scipy.sparse.csr_matrix(dummies.values)
+    csrRes = vstack([csrRes,res])
+
+print 'end at:'
+print time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))
