@@ -67,6 +67,8 @@ def PreProcess(df):
     data.uid = data.uid.replace(hashstr('uid-' + str(0)), 0)
     data.bidappnm = [hashstr('bidappnm-' + str(i)) for i in data.bidappnm]
     data.bidappnm = data.bidappnm.replace(hashstr('bidappnm-' + str(0)), 0)
+    data.albumid = [hashstr('albumid-' + str(i)) for i in data.albumid]
+    data.albumid = data.albumid.replace(hashstr('albumid-' + str(0)), 0)
     return data
     
 train56 = PreProcess(train56)
