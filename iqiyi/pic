@@ -1,0 +1,136 @@
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from dateutil.parser import parse
+import calendar
+import hashlib
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss
+import scipy
+from scipy.sparse import coo_matrix, hstack
+import matplotlib.pyplot as plt
+
+NR_BINS = 1000000
+def hashstr(input):
+    return int(hashlib.md5(input).hexdigest(), 16)%(NR_BINS-1)+1
+
+def preProcess(filePath):
+    #file = r'D:\iqiy_data\sample.csv'
+    file = filePath
+    df = pd.read_csv(file, names = ['spotid', 'click', 'drt', 'uid', 'brd', 'mod', 'sw', 'sh', 'os', 'osv', 'ip', 'country', 'apn', 'connt', 'lat', 'lon', 'ua', 'w', 'h', 'pos', 'city', 'carrier', 'bidceiling', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'title', 'content', 'imageurl', 'bidappnm', 'nu', 'goal', 'hv', 'pub-titile', 'keyword', 'channelid', 'albumid'])
+    
+    df['drt'] = df['drt'].str.replace('+', ' ')
+    mon = []
+    day = []
+    hour = []
+    minute = []
+    weekday = []
+    for i in df['drt']:
+        i = parse(i)
+        mon.append(i.month)
+        day.append(i.day)
+        hour.append(i.hour)
+        minute.append(i.minute)
+        weekday.append((calendar.weekday(i.year, i.month, i.day) + 1) % 7 + 1)
+    df['mon'] = mon
+    df['day'] = day
+    df['hour'] = hour
+    df['minute'] = minute
+    df['weekday'] = weekday
+    df.hour = [(i / 3) + 1 for i in df.hour]
+    
+    pre = df.loc[:, ['spotid', 'click', 'drt', 'uid', 'os', 'connt', 'w', 'h', 'pos', 'city', 'lang', 'bidprice', 'winprice', 'adw', 'adh', 'bidappnm', 'goal', 'keyword', 'albumid', 'mon', 'day', 'hour', 'minute', 'weekday']]
+    
+    return pre
+
+pre=preProcess(r'E:\ad\iqiy_data\sample.csv')
+
+N = 10
+
+for column in pre.columns.drop(['click','keyword','bidappnm']):
+    temp=pre['click'].groupby(pre[column]).sum().reset_index(name='click_count')
+    temp['total_count']=pre['click'].groupby(pre[column]).count().values
+    temp['ctr']=pre['click'].groupby(pre[column]).sum().div(pre['click'].groupby(pre[column]).count()).values
+     
+    if len(temp['total_count'])>N:
+        y_=pre['click'].groupby(pre[column]).sum()
+        y_.sort(ascending=False)
+        index_cc=tuple(y_.index[0:10])
+        y_cc = tuple(y_[0:10])
+        y_=pre['click'].groupby(pre[column]).count()
+        y_.sort(ascending=False)
+        index_tc=tuple(y_.index[0:10])
+        y_tc = tuple(y_[0:10])
+        y_=pre['click'].groupby(pre[column]).sum().div(pre['click'].groupby(pre[column]).count())
+        y_.sort(ascending=False)
+        index_ctr=tuple(y_.index[0:10])
+        y_ctr = tuple(y_[0:10])
+        
+        ind = np.arange(len(y_cc))    # the x locations for the groups
+        width = 0.35       # the width of the bars: can also be len(x) sequence
+        #click_count
+        plt.figure(figsize=(20,20))
+        plt.bar(ind, y_cc, width, color='r')
+        
+        plt.title(column+'_click_count')
+        plt.xticks(ind + width/2., index_cc,rotation=90)
+        
+        plt.savefig(r'E:\ad\sta\\'+column+'_click_count.png')
+        #total_count
+        plt.figure(figsize=(20,20))
+        plt.bar(ind, y_tc, width, color='r')
+
+        plt.title(column+'_total_count')
+        plt.xticks(ind + width/2., index_cc,rotation=90)
+        
+        plt.savefig(r'E:\ad\sta\\'+column+'_total_count.png')
+        #ctr
+        plt.figure(figsize=(20,20))
+        plt.bar(ind, y_ctr, width, color='r')
+
+        plt.title(column+'_ctr')
+        plt.xticks(ind + width/2., index_cc,rotation=90)
+        
+        plt.savefig(r'E:\ad\sta\\'+column+'_ctr.png')
+    else:
+        y_=pre['click'].groupby(pre[column]).sum()
+        y_.sort(ascending=False)
+        index_cc=tuple(y_.index)
+        y_cc = tuple(y_)
+        y_=pre['click'].groupby(pre[column]).count()
+        y_.sort(ascending=False)
+        index_tc=tuple(y_.index)
+        y_tc = tuple(y_)
+        y_=pre['click'].groupby(pre[column]).sum().div(pre['click'].groupby(pre[column]).count())
+        y_.sort(ascending=False)
+        index_ctr=tuple(y_.index)
+        y_ctr = tuple(y_)
+        
+        ind = np.arange(len(y_cc))    # the x locations for the groups
+        width = 0.35       # the width of the bars: can also be len(x) sequence
+        #click_count
+        plt.figure(figsize=(20,20))
+        plt.bar(ind, y_cc, width, color='r')
+        
+        plt.title(column+'_click_count')
+        plt.xticks(ind + width/2., index_cc,rotation=90)
+        
+        plt.savefig(r'E:\ad\sta\\'+column+'_click_count.png')
+        #total_count
+        plt.figure(figsize=(20,20))
+        plt.bar(ind, y_tc, width, color='r')
+
+        plt.title(column+'_total_count')
+        plt.xticks(ind + width/2., index_cc,rotation=90)
+        
+        plt.savefig(r'E:\ad\sta\\'+column+'_total_count.png')
+        #ctr
+        plt.figure(figsize=(20,20))
+        plt.bar(ind, y_ctr, width, color='r')
+
+        plt.title(column+'_ctr')
+        plt.xticks(ind + width/2., index_cc,rotation=90)
+        
+        plt.savefig(r'E:\ad\sta\\'+column+'_ctr.png')
+    temp.to_csv(r'E:\ad\sta\\'+column+'.csv')
